@@ -28,13 +28,17 @@ clfs = {
     'ADABoost': Adaboost()
 }
 
-datasets = ['heart1', 'heart2', 'heart3']   # robocze
+datasets = ['australian', 'banknote', 'breastcan',
+            'cryotherapy', 'diabetes', 'ecoli4', 'german', 
+            'heart', 'liver', 'monkone'
+            ]
 
 nDat = len(datasets)
 nFolds = 5
 
 skf = StratifiedKFold(n_splits=nFolds, shuffle=True, random_state=1410)
 scores = np.zeros((nDat, len(clfs), nFolds))
+scores2 = np.zeros((nDat, len(clfs), 2))
 
 for dataId, dat in enumerate(datasets):
     dat= np.genfromtxt(appFolder + "\datasets\%s.csv" % (dat), delimiter=",")
@@ -47,12 +51,20 @@ for dataId, dat in enumerate(datasets):
             clf.fit(X[train], y[train])
             yPre = clf.predict(X[test])
             scores[dataId, clfId, foldId] = accuracy_score(y[test], yPre)
-
-
-tab = {"klasyfikator": ['Bagging', 'Boosting', 'RSE', 'ABoost'],
-        "heart1": [meanS(scores[0][0]), meanS(scores[0][1]), meanS(scores[0][2]), meanS(scores[0][3])],
-        "heart2": [meanS(scores[1][0]), meanS(scores[1][1]), meanS(scores[1][2]), meanS(scores[1][3])],
-        "heart3": [meanS(scores[2][0]), meanS(scores[2][1]), meanS(scores[2][2]), meanS(scores[2][3])],}
-print(tabulate(tab, headers="keys"))
+    
+    for i in range(nDat):
+        for j in range(4):
+            scores2[i][j] = (round(np.mean(scores[i][j]), 3), round(np.std(scores[i][j]), 3))
 
 np.save(appFolder + '\Scores', scores)
+
+
+headers = ['Bagging', 'Boosting', 'RSE', 'ADABoost']
+names_column = ([['australian'], ['banknote'], ['breastcan'],
+                ['cryotherapy'], ['diabetes'], ['ecoli4'], ['german'], 
+                ['heart'], ['liver'], ['monkone']
+            ])
+table = np.concatenate((names_column, scores2), axis=1)
+table = tabulate(scores2, headers)
+
+print("\nPorównanie:\n", table)
