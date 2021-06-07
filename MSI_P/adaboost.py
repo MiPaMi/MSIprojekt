@@ -29,13 +29,16 @@ class Adaboost(BaseEstimator, ClassifierMixin):
 
     def fit(self, X, y):
         X, y = check_X_y(X, y)
+        self.y_ = y
+
+        self.y_[self.y_ == 0] = -1
 
         n_samples, n_features = X.shape
 
         # Inicjalizacja wag
         w = np.full(n_samples, (1 / n_samples))
 
-        self.clfs = []
+        self.clfs_ = []
         
         for _ in range(self.n_clf):
             clf = DecisionStump()
@@ -52,7 +55,7 @@ class Adaboost(BaseEstimator, ClassifierMixin):
                     predictions[X_column < threshold] = -1
 
                     # Error = suma wag błędnie sklasyfikowanych wzorców
-                    misclassified = w[y != predictions]
+                    misclassified = w[self.y_ != predictions]
                     error = sum(misclassified)
 
                     if error > 0.5:
@@ -71,17 +74,17 @@ class Adaboost(BaseEstimator, ClassifierMixin):
 
             predictions = clf.predict(X)
 
-            w *= np.exp(-clf.alpha * y * predictions)
+            w *= np.exp(-clf.alpha * self.y_ * predictions)
             w /= np.sum(w)
 
-            self.clfs.append(clf)
+            self.clfs_.append(clf)
         return self
 
     def predict(self, X):
         check_is_fitted(self)
         X = check_array(X)
-        clf_preds = [clf.alpha * clf.predict(X) for clf in self.clfs]
+        clf_preds = [clf.alpha * clf.predict(X) for clf in self.clfs_]
         y_pred = np.sum(clf_preds, axis=0)
         y_pred = np.sign(y_pred)
-
+        y_pred[y_pred == -1] = 0
         return y_pred

@@ -1,4 +1,4 @@
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, RepeatedStratifiedKFold
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 import numpy as np
@@ -29,10 +29,10 @@ def cv52cft(a, b):
 appFolder = os.path.dirname(os.path.abspath(__file__))
 
 clfs = {
-    'ADABoost': Adaboost(n_clf=10),
-    'Bagging': BaggingClassifier(base_estimator=SVC(), max_samples=0.5, n_estimators=10, random_state=0),
+    'ADABoost': Adaboost(n_clf=20),
+    'Bagging': BaggingClassifier(base_estimator=SVC(), max_samples=0.7, n_estimators=10, random_state=0),
     'Boosting': GradientBoostingClassifier(),
-    'RSE': BaggingClassifier(max_features=0.5, bootstrap=False, bootstrap_features=True)
+    'RSE': BaggingClassifier(max_features=0.7, bootstrap=False, bootstrap_features=True)
 }
 
 datasets = ['australian', 'banknote', 'breastcan',
@@ -41,10 +41,11 @@ datasets = ['australian', 'banknote', 'breastcan',
             ]
 
 nDat = len(datasets)
-nFolds = 5
+nFolds = 2
+nRep = 5
 
-skf = StratifiedKFold(n_splits=nFolds, shuffle=True, random_state=1410)
-scores = np.zeros((nDat, len(clfs), nFolds))
+rskf = RepeatedStratifiedKFold(n_splits=nFolds, n_repeats=nRep, random_state=1410)
+scores = np.zeros((nDat, len(clfs), nFolds*nRep))
 scores2 = np.zeros((nDat, len(clfs), 2))
 scores3 = []
 
@@ -53,7 +54,7 @@ for dataId, dat in enumerate(datasets):
     X = dat[:, :-1]
     y = dat[:, -1].astype(int)
 
-    for foldId, (train, test) in enumerate(skf.split(X, y)):
+    for foldId, (train, test) in enumerate(rskf.split(X, y)):
         for clfId, clfName in enumerate(clfs):
             clf = clone(clfs[clfName])
             clf.fit(X[train], y[train])
@@ -89,8 +90,7 @@ pValue = np.zeros((len(clfs), len(clfs)))
 for k in range(len(datasets)):
     for i in range(len(clfs)):
         for j in range(len(clfs)):
-            print(scores2[k][i])
-            fStatistic[i, j], pValue[i, j] = cv52cft(scores2[k][i], scores2[k][j])
+            fStatistic[i, j], pValue[i, j] = cv52cft(scores[k][i], scores[k][j])
 
 
     headers = ['ADABoost', 'Bagging', 'Boosting', 'RSE']
