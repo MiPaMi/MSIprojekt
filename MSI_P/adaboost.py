@@ -75,9 +75,10 @@ class Adaboost(BaseEstimator, ClassifierMixin):
             w /= np.sum(w)
 
             self.clfs.append(clf)
+        return self
 
     def predict(self, X):
-        # check_is_fitted(self)
+        check_is_fitted(self)
         X = check_array(X)
         clf_preds = [clf.alpha * clf.predict(X) for clf in self.clfs]
         y_pred = np.sum(clf_preds, axis=0)
